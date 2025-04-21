@@ -1,0 +1,444 @@
+###################################titanic datset###########################################################################	
+# 1. Load dataset
+data <- read.csv("titanic.csv")
+
+# 2. Clean missing values
+data <- na.omit(data)
+
+# 3. Explore dataset
+str(data)
+summary(data)
+head(data)
+
+# 4. Convert columns to categorical
+data$Survived <- as.factor(data$Survived)
+data$Pclass <- as.factor(data$Pclass)
+data$Sex <- as.factor(data$Sex)
+data$Embarked <- as.factor(data$Embarked)
+
+# 5. Add dummy missing values (for demo purpose only)
+data[1, "Age"] <- NA
+data[2, "Fare"] <- NA
+
+# 6. Impute missing values using mean
+print(data$Age[is.na(data$Age)] <- mean(data$Age, na.rm = TRUE))
+print(data$Fare[is.na(data$Fare)] <- mean(data$Fare, na.rm = TRUE))
+
+# 7. Scale numeric columns manually (Min-Max normalization)
+data$Age <- (data$Age - min(data$Age)) / (max(data$Age) - min(data$Age))
+data$Fare <- (data$Fare - min(data$Fare)) / (max(data$Fare) - min(data$Fare))
+data$SibSp <- (data$SibSp - min(data$SibSp)) / (max(data$SibSp) - min(data$SibSp))
+data$Parch <- (data$Parch - min(data$Parch)) / (max(data$Parch) - min(data$Parch))
+
+# 8. Create a new feature: FamilySize = SibSp + Parch + 1 (including self)
+data$FamilySize <- data$SibSp + data$Parch + 1
+
+# 9. Save the cleaned and transformed dataset
+write.csv(data, "preprocessed_data.csv", row.names = FALSE)
+print("data has been preprocessed")
+
+
+
+
+########################ESQUISSE#######################
+library(esquisse)
+library(ggplot2)
+data(mtcars)
+esquisser(mtcars)
+
+
+
+
+###############################3####################################################
+# 1. Load required packages
+library(ggplot2)
+
+# 2. Load mtcars dataset
+data <- mtcars
+
+# Convert suitable variables to factors (categorical)
+data$cyl <- as.factor(data$cyl)
+data$gear <- as.factor(data$gear)
+data$am <- as.factor(data$am)
+data$vs <- as.factor(data$vs)
+data$carb <- as.factor(data$carb)
+
+# 3. Visualizations
+
+# Histogram of mpg
+ggplot(data, aes(x = mpg)) +
+  geom_histogram(fill = "skyblue", bins = 10, color = "black") +
+  labs(title = "Histogram of MPG") +
+  theme_minimal()
+
+# Box plot of mpg by cyl
+ggplot(data, aes(x = cyl, y = mpg)) +
+  geom_boxplot(fill = "lightgreen") +
+  labs(title = "Boxplot of MPG by Cylinders") +
+  theme_minimal()
+
+# Violin plot of hp by gear
+ggplot(data, aes(x = gear, y = hp)) +
+  geom_violin(fill = "orange") +
+  labs(title = "Violin Plot of HP by Gear") +
+  theme_minimal()
+# Scatter plot with trend line: mpg vs wt
+ggplot(data, aes(x = wt, y = mpg)) +
+  geom_point(color = "blue") +
+  geom_smooth(method = "lm", color = "red") +
+  labs(title = "MPG vs Weight with Trend Line") +
+  theme_minimal()
+
+# Facet scatter plot: mpg vs hp by gear
+ggplot(data, aes(x = hp, y = mpg)) +
+  geom_point(color = "purple") +
+  facet_wrap(~ gear) +
+  labs(title = "MPG vs HP Faceted by Gear") +
+  theme_minimal()
+
+# Bar plot: count of cars by gear
+ggplot(data, aes(x = gear)) +
+  geom_bar(fill = "tomato") +
+  labs(title = "Car Count by Gear") +
+  theme_minimal()
+
+# Heatmap: Correlation Between Numerical Variables (Only Numeric Columns)
+numeric_data <- Filter(is.numeric, data)  # Keep only numeric columns
+cor_matrix <- cor(numeric_data)           # Calculate correlation matrix
+heatmap(cor_matrix, main = "Correlation Heatmap")
+
+# Outlier Detection using IQR (for mpg)
+Q1 <- quantile(data$mpg, 0.25)
+Q3 <- quantile(data$mpg, 0.75)
+IQR <- Q3 - Q1
+lower_bound <- Q1 - 1.5 * IQR
+upper_bound <- Q3 + 1.5 * IQR
+outliers <- data$mpg[data$mpg < lower_bound | data$mpg > upper_bound]
+print("Outliers in mpg using IQR method:")
+print(outliers)
+
+
+
+
+#################################SHINY###############################################
+library(shiny)
+library(ggplot2)
+
+# Read the iris dataset
+data(iris)
+
+ui <- fluidPage(
+  selectInput("x", "X:", names(iris)),
+  selectInput("y", "Y:", names(iris)),
+  selectInput("box", "Boxplot:", names(iris)),
+  verbatimTextOutput("sum"),
+  plotOutput("scat"),
+  plotOutput("boxp")
+)
+
+server <- function(input, output) {
+  output$sum <- renderPrint({ summary(iris) })
+  
+  output$scat <- renderPlot({
+    ggplot(iris, aes_string(x = input$x, y = input$y)) +
+      geom_point() +
+      theme_minimal()
+  })
+  
+  output$boxp <- renderPlot({
+    ggplot(iris, aes_string(y = input$box)) +
+      geom_boxplot() +
+      theme_minimal()
+  })
+}
+
+shinyApp(ui, server)
+
+
+
+
+
+
+
+####################################IQR,ZSCORE####################################
+# Load libraries
+library(ggplot2)
+library(e1071)
+
+# Load data
+data <- mtcars
+
+# IQR Outliers for mpg
+q1 <- quantile(data$mpg, 0.25)
+q3 <- quantile(data$mpg, 0.75)
+iqr <- q3 - q1
+outliers_iqr <- data$mpg[data$mpg < (q1 - 1.5 * iqr) | data$mpg > (q3 + 1.5 * iqr)]
+print(outliers_iqr)
+
+# Z-score Outliers for mpg
+mean_mpg <- mean(data$mpg)
+sd_mpg <- sd(data$mpg)
+z_scores <- (data$mpg - mean_mpg) / sd_mpg
+outliers_z <- data$mpg[abs(z_scores) > 2]
+print(outliers_z)
+
+# Probability of being an outlier
+prob_iqr <- length(outliers_iqr) / nrow(data)
+prob_z <- length(outliers_z) / nrow(data)
+print(prob_iqr)
+print(prob_z)
+
+# Conditional Probability: P(hp > 150 | mpg < 20)
+cond <- sum(data$hp > 150 & data$mpg < 20) / sum(data$mpg < 20)
+print(cond)
+
+# Skewness
+skew_mpg <- skewness(data$mpg)
+skew_hp <- skewness(data$hp)
+skew_wt <- skewness(data$wt)
+print(skew_mpg)
+print(skew_hp)
+print(skew_wt)
+
+# Correlations
+cor_mpg_hp <- cor(data$mpg, data$hp)
+cor_mpg_wt <- cor(data$mpg, data$wt)
+print(cor_mpg_hp)
+print(cor_mpg_wt)
+
+# ggplot2: Boxplot of mpg
+ggplot(data, aes(y = mpg)) +
+  geom_boxplot(fill = "lightblue") +
+  ggtitle("Boxplot of MPG")
+
+# ggplot2: Histogram of mpg
+ggplot(data, aes(x = mpg)) +
+  geom_histogram(fill = "lightgreen", bins = 10, color = "black") +
+  ggtitle("Histogram of MPG")
+
+
+
+
+
+######################################PEARSON##############################################
+# Load libraries
+library(ggplot2)
+library(pheatmap)
+
+# Load mtcars dataset
+data <- mtcars
+
+# 1. Pearson Correlation Matrix
+pearson_corr <- cor(data)
+print("Pearson Correlation Matrix:")
+print(pearson_corr)
+
+# 2. Spearman Correlation Matrix
+spearman_corr <- cor(data, method = "spearman")
+print("Spearman Correlation Matrix:")
+print(spearman_corr)
+
+# 3. Heatmap for Pearson Correlation
+pheatmap(pearson_corr, main = "Heatmap - Pearson Correlation")
+
+# 4. Scatter Plot: mpg vs hp
+ggplot(data, aes(x = hp, y = mpg)) +
+  geom_point(color = "purple") +
+  labs(title = "mpg vs hp", x = "Horsepower", y = "Miles per Gallon")
+
+# 5. Boxplot: mpg by number of cylinders
+ggplot(data, aes(x = factor(cyl), y = mpg)) +
+  geom_boxplot(fill = "orange") +
+  labs(title = "mpg by Cylinders", x = "Cylinders", y = "Miles per Gallon")
+
+# 6. Bar Plot: Count of cylinder types
+ggplot(data, aes(x = factor(cyl))) +
+  geom_bar(fill = "steelblue") +
+  labs(title = "Count of Cylinders", x = "Cylinders", y = "Count")
+
+# 7. Simple Dendrogram of Variables
+d <- dist(t(data))        # Distance between variables
+h <- hclust(d)            # Hierarchical clustering
+plot(h, main = "Variable Clustering Dendrogram")
+
+
+
+
+
+
+
+
+##############################RMSE########################
+# Load necessary libraries
+library(ggplot2)
+library(Metrics)
+
+# Load and clean data
+data <- read.csv("yourfile.csv")  # Replace with your file name
+data <- na.omit(data)             # Remove missing values
+
+# Fit a simple linear model
+linear_model <- lm(Sales ~ Month, data = data)
+
+# Fit a quadratic model
+quad_model <- lm(Sales ~ I(Month^2) + Month, data = data)
+
+# Predict sales for the next 6 months (Months 61-66) using both models
+future_months <- data.frame(Month = 61:66)
+
+# Linear model predictions
+linear_predictions <- predict(linear_model, newdata = future_months)
+
+# Quadratic model predictions
+quad_predictions <- predict(quad_model, newdata = future_months)
+
+# Print predictions for both models
+print("Linear Predictions for Months 61-66:")
+print(linear_predictions)
+
+print("Quadratic Predictions for Months 61-66:")
+print(quad_predictions)
+
+# Plot the data and both regression lines
+ggplot(data, aes(x = Month, y = Sales)) +
+  geom_point(color = "blue") +  # Original data points
+  geom_smooth(method = "lm", color = "green") +  # Linear regression line
+  geom_smooth(method = "lm", formula = y ~ x + I(x^2), color = "red") +  # Quadratic regression line
+  labs(title = "Sales Trend Prediction", x = "Month", y = "Sales")
+
+# Calculate R-squared
+rsq1 <- summary(linear_model)$r.squared
+rsq2 <- summary(quad_model)$r.squared
+
+print(paste("Linear R-squared:", rsq1))
+print(paste("Quadratic R-squared:", rsq2))
+
+# Calculate RMSE
+rmse1 <- rmse(data$Sales, predict(linear_model))
+rmse2 <- rmse(data$Sales, predict(quad_model))
+
+print(paste("Linear RMSE:", rmse1))
+print(paste("Quadratic RMSE:", rmse2))
+
+
+
+
+
+
+######################EIGEN VALUE###########################################33
+# Load required library
+library(pheatmap)
+
+# Read the dataset
+data <- read.csv("diabetes.csv")
+data <- na.omit(data)  # Remove missing values
+
+# Pearson Correlation Matrix
+pearson_corr <- cor(data, method = "pearson")
+print("Pearson Correlation Matrix:")
+print(pearson_corr)
+
+# Spearman Correlation Matrix
+spearman_corr <- cor(data, method = "spearman")
+print("Spearman Correlation Matrix:")
+print(spearman_corr)
+
+# Heatmap of Pearson Correlation
+pheatmap(pearson_corr, main = "Heatmap - Pearson Correlation")
+
+# Eigen Decomposition of Pearson Correlation Matrix
+eigen_result <- eigen(pearson_corr)
+
+print("Eigenvalues:")
+print(eigen_result$values)
+
+print("Eigenvectors:")
+print(eigen_result$vectors)
+
+
+
+
+
+####################################LOGISTIC REGRESSION PCA(9)$############################################
+# Step 1: Load and clean your data
+data <- read.csv("heart.csv")
+data <- na.omit(data)  # Remove missing values
+
+# Step 2: Train logistic regression WITHOUT PCA
+# Replace 'target' with the actual target column name
+model1 <- glm(target ~ ., data = data, family = "binomial")
+pred1 <- ifelse(predict(model1, type = "response") > 0.5, 1, 0)
+acc1 <- mean(pred1 == data$target)
+print(paste("Accuracy without PCA:", acc1))
+
+# Step 3: Apply PCA to features only (remove target column)
+pca <- prcomp(data[, -which(names(data) == "target")], scale. = TRUE)
+newdata <- data.frame(pca$x[, 1:5])  # Take first 5 principal components
+newdata$target <- data$target  # Add target back
+
+# Step 4: Train logistic regression WITH PCA
+model2 <- glm(target ~ ., data = newdata, family = "binomial")
+pred2 <- ifelse(predict(model2, type = "response") > 0.5, 1, 0)
+acc2 <- mean(pred2 == newdata$target)
+print(paste("Accuracy with PCA:", acc2))
+
+# Step 5: Show basic correlation plot
+cor_matrix <- cor(data[, -which(names(data) == "target")])
+heatmap(cor_matrix, main = "Correlation Heatmap")
+
+# Extra Step: Confusion Matrix for predictions without PCA
+# (can be replaced with any column in dataset as target)
+conf_mat <- table(Predicted = pred1, Actual = data$target)
+print("Confusion Matrix (without PCA):")
+print(conf_mat)
+
+
+
+
+
+################################PCR (10)############################
+# Load dataset
+# This assumes you have a file named 'Housing.csv' with the necessary columns
+data <- read.csv("Housing.csv")
+
+# Remove missing values to avoid errors during modeling
+data <- na.omit(data)
+
+# Convert categorical columns to numeric values using factor encoding
+# This helps linear regression handle non-numeric data
+# (e.g., 'yes', 'no' becomes 1, 2)
+data$mainroad <- as.numeric(as.factor(data$mainroad))
+data$guestroom <- as.numeric(as.factor(data$guestroom))
+data$basement <- as.numeric(as.factor(data$basement))
+data$hotwaterheating <- as.numeric(as.factor(data$hotwaterheating))
+data$airconditioning <- as.numeric(as.factor(data$airconditioning))
+data$prefarea <- as.numeric(as.factor(data$prefarea))
+data$furnishingstatus <- as.numeric(as.factor(data$furnishingstatus))
+
+# Build a multiple linear regression model
+# This model tries to predict price using all other columns
+model <- lm(price ~ ., data = data)
+summary(model)  # Show model summary and coefficients
+
+# Solve the Normal Equation manually to get regression coefficients
+# X is the feature matrix with an added column of 1s (intercept term)
+X <- as.matrix(cbind(1, data[, -which(names(data) == "price")]))
+y <- as.matrix(data$price)
+
+# Calculate the coefficients using Normal Equation: beta = (X'X)^(-1) X'y
+beta <- solve(t(X) %% X) %% t(X) %*% y
+print("Coefficients using Normal Equation:")
+print(beta)
+
+# Perform Principal Component Analysis (PCA) to address multicollinearity
+# This step transforms original features into new uncorrelated variables (PCs)
+pc <- prcomp(data[, -which(names(data) == "price")], scale. = TRUE)
+pc_data <- data.frame(pc$x)  # PCA-transformed data (all components)
+pc_data$price <- data$price  # Add target variable back
+
+# Build PCR model using principal components to predict price
+pcr_model <- lm(price ~ ., data = pc_data)
+summary(pcr_model)  # Show PCR model summary
+
+
+
